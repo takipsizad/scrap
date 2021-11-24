@@ -1,19 +1,25 @@
+import os
+import random
+import string
+import sys
+import threading
+import time
+
+import selenium
 from selenium import webdriver
 from selenium.webdriver import firefox
+from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
-import time
-import string
-import threading
-import os
-import sys
-import random
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
 options = Options()
 options.add_argument("--enable-javascript")
 options.add_argument("--headless")
 print("initalizing")
-fp = webdriver.FirefoxProfile("C:/Users/pc/AppData/Roaming/Mozilla/Firefox/Profiles/scraper")
-fp.set_preference("permissions.default.image", 2)
-browser = webdriver.Firefox(options=options,firefox_profile=fp)
+options.set_preference("profile" ,"C:/Users/pc/AppData/Roaming/Mozilla/Firefox/Profiles/scraper")
+options.set_preference("permissions.default.image", 2)
+browser = webdriver.Firefox(options=options)
 browser.get("https://glitch.com/edit/#!/hello-express")
 def randomtext():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k = 10 )) 
@@ -25,7 +31,7 @@ rantext = randomtext()
 
 file = f"glitch.{rantext}.txt"
 file2 = f"glitch.desc.{rantext}.txt"
-f = open(file, "a+",encoding="utf-16")
+f = open(file, "a+",encoding="utf-8")
 f2 = open(file2, "a+",encoding="utf-16")
 
 print(file)
@@ -33,20 +39,30 @@ print(file)
 print("init finished")
 
 def scrap(url):
-    f = open(file, "a+",encoding="utf-16")
-    f2 = open(file2, "a+",encoding="utf-16")
-    browser.get(f'https://glitch.com/search?q={url}&activeFilter=project')
+    try:
+        browser.get(f'https://glitch.com/search?q={url}&activeFilter=project')
+    except selenium.common.exceptions.UnexpectedAlertPresentException:
+        print("alert")
+        browser.refresh();
     print(f"scraping {url}")
+    f = open(file, "a+",encoding="utf-8")
+    f2 = open(file2, "a+",encoding="utf-16")
     for i in range(100):
-        e = browser.find_elements_by_xpath(f"/html/body/div/div/div[2]/main/article/ul/li[{i}]/div/div/div/div/div/a")
-        e2 = browser.find_elements_by_xpath(f"/html/body/div/div/div[2]/main/article/ul/li[{i}]/div/div/div/div/div/a/div[2]/div/p")
+        try:
+            WebDriverWait(browser, 120).until(
+                        EC.presence_of_element_located((By.XPATH, "/html/body/div/div/div[2]/main/article/ul/li[1]/div/div/div/div/div/a"))
+                    )
+            e = browser.find_elements(By.XPATH,f"/html/body/div/div/div[2]/main/article/ul/li[{i}]/div/div/div/div/div/a")
+            e2 = browser.find_elements(By.XPATH,f"/html/body/div/div/div[2]/main/article/ul/li[{1}]/div/div/div[1]/p")
+        except selenium.common.exceptions.TimeoutException:
+            break
         for elem in e:
-            threading.Thread(target=f.write(f'{elem.get_attribute("href")}:{url}\n'))
+            f.write(f'{elem.get_attribute("href")}:{url}\n')
         for elem in e2:
-            threading.Thread(target=f2.write(f'{elem.text}\n'))
+            f2.write(f'{elem.text}\n')
+    print(f"finished scraping {url}")
     f.close()
     f2.close()
-    print(f"finished scraping {url}")
 keywords = [
 "j4j",
 "bot",

@@ -1,18 +1,25 @@
+import os
+import random  # define the random module
+import string
+import sys
+import threading
+import time
+
+import requests
+import selenium.common.exceptions
+import selenium
 from selenium import webdriver
 from selenium.webdriver import firefox
+from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
-import time
-import string
-import threading
-import random # define the random module
-import os
-import requests
-import sys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
 options = Options()
 options.add_argument("--enable-javascript")
-options.add_argument("--headless")
-fp = webdriver.FirefoxProfile("C:/Users/pc/AppData/Roaming/Mozilla/Firefox/Profiles/scraper")
-browser = webdriver.Firefox(firefox_profile=fp)
+#options.add_argument("--headless")
+options.set_preference("profile" ,"C:/Users/pc/AppData/Roaming/Mozilla/Firefox/Profiles/scraper")
+browser = webdriver.Firefox(options=options)
 browser.implicitly_wait(20)
 if len(sys.argv) < 2:
     print("make sure to start from main.py or same arguments as that: python remixer.py *file*")
@@ -31,12 +38,27 @@ for filecontent in readfile:
 for filecontent in filecontents:
     browser.get(f"https://glitch.com/edit/#!/remix/{filecontent}")
     time.sleep(1)
-    browser.find_element_by_xpath('//*[@id="tools-pop-button"]').click() #"""https://glitch.com/edit/#!/remix/spurious-held-law"""
-    browser.find_element_by_xpath("/html/body/div[3]/div/main/div[1]/section[1]/footer/section/div[2]/dialog/section[3]/div[1]/button").click()
-    to_download = browser.find_element_by_xpath('//*[@id="download-project"]').get_attribute('href')
-    content = requests.get(to_download)
-    open(f"{filecontent}.tgz", 'wb').write(content.content)
-    browser.find_element_by_xpath("/html/body/div[3]/div/header/nav/button/div/span").click()
-    browser.find_element_by_xpath('//*[@id="delete-project"]').click()
-    ale = browser.switch_to.alert
-    ale.accept()
+    while True:
+        try:
+            browser.find_element(By.XPATH,'//*[@id="tools-pop-button"]').click()
+            WebDriverWait(browser, 120).until(
+                        EC.presence_of_element_located((By.XPATH, '//*[@id="tools-pop-button"]'))
+                    )
+            browser.find_element(By.XPATH,("/html/body/div[3]/div/main/div[1]/section[1]/footer/section/div[2]/dialog/section[3]/div[1]/button").click())
+            to_download = browser.find_element(By.XPATH,('//*[@id="download-project"]').get_attribute('href'))#"""https://glitch.com/edit/#!/remix/spurious-held-law"""
+            content = requests.get(to_download)
+            open(f"{filecontent}.tgz", 'wb').write(content.content)
+            break
+        except (selenium.common.exceptions.NoSuchElementException,selenium.common.exceptions.ElementNotInteractableException,selenium.common.exceptions.ElementClickInterceptedException
+                ,selenium.common.exceptions.StaleElementReferenceException):
+            break
+    while True:
+        try:
+            browser.find_element(By.XPATH,"/html/body/div[3]/div/header/nav/button/div/span").click()
+            browser.find_element(By.XPATH,'//*[@id="delete-project"]').click()
+            ale = browser.switch_to.alert
+            ale.accept()
+            break
+        except (selenium.common.exceptions.NoSuchElementException,selenium.common.exceptions.ElementNotInteractableException,selenium.common.exceptions.ElementClickInterceptedException
+                ,selenium.common.exceptions.StaleElementReferenceException):
+            break
