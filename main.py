@@ -12,23 +12,24 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+#
+REMIX = True
+CAPTCHA_BYPASS_WITH_BUSTER = True
+#
 
 options = Options()
 options.add_argument("--enable-javascript")
-options.add_argument("--headless")
+#options.add_argument("--headless")
 print("initalizing")
 options.set_preference("profile" ,"C:/Users/pc/AppData/Roaming/Mozilla/Firefox/Profiles/scraper")
 options.set_preference("permissions.default.image", 2)
 browser = webdriver.Firefox(options=options)
+if CAPTCHA_BYPASS_WITH_BUSTER is True:
+    browser.install_addon(os.path.join(os.getcwd(),"buster.xpi"), temporary=False)
 browser.get("https://glitch.com/edit/#!/hello-express")
 def randomtext():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k = 10 )) 
-#
-remix = False
-#
-
 rantext = randomtext()
-
 file = f"glitch.{rantext}.txt"
 file2 = f"glitch.desc.{rantext}.txt"
 f = open(file, "a+",encoding="utf-8")
@@ -42,8 +43,17 @@ def scrap(url):
     try:
         browser.get(f'https://glitch.com/search?q={url}&activeFilter=project')
     except selenium.common.exceptions.UnexpectedAlertPresentException:
-        print("alert")
-        browser.refresh();
+        try:
+            e = browser.find_element(By.ID, "rc-control")
+        except:
+            pass
+        if e:
+            if CAPTCHA_BYPASS_WITH_BUSTER is True:
+                browser.find_element(By.ID, "solver-button").click()
+                time.sleep(1)
+            else:
+                browser.refresh() # tries to bypass anyway?
+
     print(f"scraping {url}")
     f = open(file, "a+",encoding="utf-8")
     f2 = open(file2, "a+",encoding="utf-16")
@@ -140,5 +150,5 @@ keywords = [
 ]
 for keyword in keywords:
     scrap(keyword)
-if remix == True:
+if REMIX is True:
     os.system(f"{sys.executable} remixer.py {file}")
